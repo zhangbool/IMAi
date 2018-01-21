@@ -10,6 +10,10 @@ class DefaultSaxHandler(object):
         self.provinces = provinces
 
     def start_element(self, name, attrs):
+
+        print(name)
+        print(attrs) 
+
         if name != 'map':
             name = attrs['title']
             number = attrs['href']
