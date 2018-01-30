@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<bookstore>
+    <book>
+        <title>Ivan's World</title>
+        <price>99.00</price>
+    </book>
+    <book>
+        <title>Ivan's Code</title>
+        <price>20.00</price>
+    </book>
+</bookstore>
