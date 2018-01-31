@@ -3,6 +3,7 @@ import scrapy
 import codecs
 import requests
 from bs4 import BeautifulSoup
+import pymysql
 
 
 # 城市对象模型
@@ -32,14 +33,20 @@ class MonitoringSiteInfo:
 # 爬虫程序
 class GetcitySpider(scrapy.Spider):
 
+    # 爬虫相关
     name = 'getCity'
     allowed_domains = ['http://pm25.in']
     start_urls = ['http://pm25.in']
+
 
     # 解析结果
     def parse(self, response):
 
         print("----------------------------spider-start----------------------------")
+
+        # 0, 连接数据库
+        database = pymysql.connect("127.0.0.1", "root", "ivanl48265", "test", charset='utf8')
+        cursor = database.cursor()
 
         #1，xpath获取所有的城市名
         cityNameList = response.xpath('/html/body/div[2]/div[2]/div[2]/div[2]/ul[@class="unstyled"]/div[2]/li/a/text()').extract()
@@ -53,9 +60,20 @@ class GetcitySpider(scrapy.Spider):
         for i in range(len(cityNameList)):
             city = City(cityNameList[i], "http://pm25.in"+urlList[i])
             cities.append(city)
+            break # 这里break是为了测似乎的时候只走第一次
 
         #4, 写入保存的数据到文件中(其实这里存不存都无所谓)
         # for city in cities:
+        #
+        #     #保存到数据库中去, 其实保存一遍也就够了， 当有一天不能访问的时候重新更新一下， 不过这种情况应该会很少会遇到
+        #     print(city.name)
+        #     print(city.url)
+        #     sqlStr = "insert into cityInfo (cityName, url) VALUES ('%s', '%s')" % (city.name, city.url)
+        #     cursor.execute(sqlStr)
+        #     database.commit()
+        #     print("保存数据库--")
+            # return
+
         #     print("城市名："+city.name+",url："+city.url)
         #     lineTxt = city.name+" "+city.url+"\n"
         #     f = codecs.open("cityInfo.txt", "a", "utf-8")
@@ -66,7 +84,14 @@ class GetcitySpider(scrapy.Spider):
         monitoringSiteInfos = []  # 因为监测站不是某一个城市所有，所以放在最外面
         for city in cities:
             print(city.url)
-            content = requests.get(city.url).content.decode("utf8")
+
+
+            returnedData = requests.get(city.url)
+            print(returnedData.status_code)
+            if returnedData.status_code != 200:
+                print(city.name + "," + city.name + ":" + "请求出错！")
+                break
+            content = returnedData.content.decode("utf8")
             soup = BeautifulSoup(content, "html.parser")
 
             # print("soup:\n"+soup.text)
@@ -94,17 +119,17 @@ class GetcitySpider(scrapy.Spider):
                     j = j+1
                     print(monitoringSiteSoup.find_all('td'))
                     monitoringSiteInfo = monitoringSiteSoup.find_all('td')
-                    name = monitoringSiteInfo[0].text
-                    AQI = monitoringSiteInfo[1].text
-                    desc = monitoringSiteInfo[2].text
-                    mainPollution = monitoringSiteInfo[3].text
-                    pm25 = monitoringSiteInfo[4].text
-                    pm10 = monitoringSiteInfo[5].text
-                    co = monitoringSiteInfo[6].text
-                    no2 = monitoringSiteInfo[7].text
-                    o3 = monitoringSiteInfo[8].text
-                    o3_8 = monitoringSiteInfo[9].text
-                    so2 = monitoringSiteInfo[10].text
+                    name = monitoringSiteInfo[0].text.replace(' ','')
+                    AQI = monitoringSiteInfo[1].text.replace(' ','')
+                    desc = monitoringSiteInfo[2].text.replace(' ','')
+                    mainPollution = monitoringSiteInfo[3].text.replace(' ','')
+                    pm25 = monitoringSiteInfo[4].text.replace(' ','')
+                    pm10 = monitoringSiteInfo[5].text.replace(' ','')
+                    co = monitoringSiteInfo[6].text.replace(' ','')
+                    no2 = monitoringSiteInfo[7].text.replace(' ','')
+                    o3 = monitoringSiteInfo[8].text.replace(' ','')
+                    o3_8 = monitoringSiteInfo[9].text.replace(' ','')
+                    so2 = monitoringSiteInfo[10].text.replace(' ','')
                     #print(name)
                     print(releaseTimeStr + "--" + name + "--" + AQI + "--" + desc + "--" + mainPollution + "--" + pm25 + "--" + pm10 + "--" + co + "--" + no2 + "--" + o3 + "--" + o3_8 + "--" + so2 )
                     monitoringSiteInfoModel = MonitoringSiteInfo(releaseTimeStr, city.name, name, AQI, desc, mainPollution, pm25, pm10, co, no2, o3, o3_8, so2)
@@ -122,14 +147,19 @@ class GetcitySpider(scrapy.Spider):
 
         #6， 把获取的全国城市空气质量保存到文件中
         for monitoringSiteInfo in monitoringSiteInfos:
-            lineTxt = monitoringSiteInfo.releaseTime + " " + monitoringSiteInfo.cityName + " " + monitoringSiteInfo.siteName + " "  +monitoringSiteInfo.AQI + " " + monitoringSiteInfo.desc + " " + monitoringSiteInfo.pm25 + " " + monitoringSiteInfo.pm10 + " " + monitoringSiteInfo.co + " " + monitoringSiteInfo.no2 + " " + monitoringSiteInfo.o3 + " " + monitoringSiteInfo.o3_8 + " " + monitoringSiteInfo.so2 + "\n"
-            f = codecs.open("api.txt", "a", "utf-8")
-            f.write(lineTxt)
-            f.close()
+            # 6.1， 写入到文件中
+            # lineTxt = monitoringSiteInfo.releaseTime + " " + monitoringSiteInfo.cityName + " " + monitoringSiteInfo.siteName + " "  +monitoringSiteInfo.AQI + " " +monitoringSiteInfo.mainPollution+ " "+ monitoringSiteInfo.desc + " " + monitoringSiteInfo.pm25 + " " + monitoringSiteInfo.pm10 + " " + monitoringSiteInfo.co + " " + monitoringSiteInfo.no2 + " " + monitoringSiteInfo.o3 + " " + monitoringSiteInfo.o3_8 + " " + monitoringSiteInfo.so2 + "\n"
+            # f = codecs.open("api.txt", "a", "utf-8")
+            # f.write(lineTxt)
+            # f.close()
+
+            # 6.2, 写入到数据库中
+            sqlStr = "insert into cityAPIInfo (releaseTime, cityName, monitoringSiteName, AQI, pollutionLevel, mainPollution, pm25, pm10, carbonMonoxide, no2, o3, o3_8, so2) VALUES ('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s')" % (monitoringSiteInfo.releaseTime, monitoringSiteInfo.cityName, monitoringSiteInfo.siteName, monitoringSiteInfo.AQI, monitoringSiteInfo.desc, monitoringSiteInfo.mainPollution, monitoringSiteInfo.pm25, monitoringSiteInfo.pm10, monitoringSiteInfo.co, monitoringSiteInfo.no2, monitoringSiteInfo.o3, monitoringSiteInfo.o3_8, monitoringSiteInfo.so2)
+            row = cursor.execute(sqlStr)
+            database.commit()
+            print("保存数据库--" + str(row))
 
         print("全国监测站一共有：" + str(len(monitoringSiteInfos)))
-
-
-
+        database.close()
         print("----------------------------spider-end----------------------------")
         pass
