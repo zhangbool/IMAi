@@ -33,6 +33,8 @@ class MonitoringSiteInfo:
 # 爬虫程序
 class GetcitySpider(scrapy.Spider):
 
+    print("ivanl000001")
+
     # 爬虫相关
     name = 'getCity'
     allowed_domains = ['http://pm25.in']
@@ -60,7 +62,7 @@ class GetcitySpider(scrapy.Spider):
         for i in range(len(cityNameList)):
             city = City(cityNameList[i], "http://pm25.in"+urlList[i])
             cities.append(city)
-            break # 这里break是为了测似乎的时候只走第一次
+            # break # 这里break是为了测似乎的时候只走第一次
 
         #4, 写入保存的数据到文件中(其实这里存不存都无所谓)
         # for city in cities:

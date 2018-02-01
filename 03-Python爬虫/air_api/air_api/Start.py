@@ -1,38 +1,13 @@
-#  # -*- coding:utf-8 -*-
+ # -*- coding:utf-8 -*-
 
-
-
-# import time
-# from scrapy import cmdline
-#
-# while True:
-#     print("iiiiiiiiiiiiiiiiiiii")
-#     time.sleep(60)  #每隔一天运行一次 24*60*60=86400s
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import subprocess
 import os
-from scrapy import cmdline
 from datetime import date, time, datetime, timedelta
 
 def work():
  print("-----------------------task working!-----------------------")
  # 可能因为cmdline是scrapy模块中自带的，所以定时执行时只能执行一次就退出了
  # cmdline.execute("scrapy crawl getCity".split())
- # subprocess.Popen("scrapy crawl getCity".split())
+ # subprocess.Popen("scrapy crawl getCity".split())  # 这个是异步操作，不用这个
  os.system("scrapy crawl getCity")
  print("-----------------------task finished!-----------------------")
 
@@ -74,5 +49,5 @@ def runTask(func, day=0, hour=0, min=0, second=0):
     continue
 
 
-runTask(work, day=0, hour=0, min=1)
+runTask(work, day=0, hour=1, min=0)
 
